@@ -21,6 +21,7 @@ function App() {
     setLoading(true);
 
     try {
+      console.log("API CALL:", `${API_URL}/ask?q=${input}`);
       const res = await fetch(
         `${API_URL}/ask?q=${encodeURIComponent(input)}`
       );
