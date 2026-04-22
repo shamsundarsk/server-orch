@@ -1,27 +1,53 @@
 import { useState } from "react";
 import "./App.css";
 
+const API_URL =
+  "https://so-serverolrch-ffg3edbranfdcygr.canadacentral-01.azurewebsites.net";
+
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [started, setStarted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const send = async () => {
-    if (!input) return;
+    if (!input || loading) return;
 
     setStarted(true);
 
     const userMsg = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
 
-    const res = await fetch(
-      `http://127.0.0.1:8000/ask?q=${encodeURIComponent(input)}`
-    );
-    const data = await res.json();
+    setLoading(true);
 
-    const botMsg = { role: "bot", content: data.answer };
-    setMessages((prev) => [...prev, botMsg]);
+    try {
+      const res = await fetch(
+        `${API_URL}/ask?q=${encodeURIComponent(input)}`
+      );
 
+      if (!res.ok) {
+        throw new Error("Backend error");
+      }
+
+      const data = await res.json();
+
+      const botMsg = {
+        role: "bot",
+        content: data.answer || "No response from AI",
+      };
+
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "bot",
+          content: "⚠️ Failed to connect to backend",
+        },
+      ]);
+    }
+
+    setLoading(false);
     setInput("");
   };
 
@@ -35,6 +61,7 @@ function App() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about your servers..."
+              onKeyDown={(e) => e.key === "Enter" && send()}
             />
             <button onClick={send}>→</button>
           </div>
@@ -49,6 +76,8 @@ function App() {
                 {m.content}
               </div>
             ))}
+
+            {loading && <div className="msg bot">Thinking...</div>}
           </div>
 
           <div className="inputBox bottomInput">
@@ -56,6 +85,7 @@ function App() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything..."
+              onKeyDown={(e) => e.key === "Enter" && send()}
             />
             <button onClick={send}>→</button>
           </div>
